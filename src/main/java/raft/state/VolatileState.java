@@ -1,12 +1,14 @@
 package raft.state;
 
 public class VolatileState {
-    private final int commitIndex;
-    private final int lastApplied;
+    private int commitIndex;
+    private int lastApplied;
+    private long leaderId;
 
-    public VolatileState(int commitIndex, int lastApplied) {
+    public VolatileState(int commitIndex, int lastApplied, long leaderId) {
         this.commitIndex = commitIndex;
         this.lastApplied = lastApplied;
+        this.leaderId = leaderId;
     }
 
     public int getCommitIndex() {
@@ -15,5 +17,21 @@ public class VolatileState {
 
     public int getLastApplied() {
         return lastApplied;
+    }
+
+    public long getLeaderId() {
+        return leaderId;
+    }
+
+    public void setLeaderId(long leaderId) {
+        this.leaderId = leaderId;
+    }
+
+    public void setCommitIndex(int commitIndex) {
+        this.commitIndex = commitIndex;
+    }
+
+    public void setLastApplied(int lastApplied) {
+        this.lastApplied = lastApplied;
     }
 }
