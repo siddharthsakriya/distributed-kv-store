@@ -10,7 +10,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class RaftNodeTest {
     @Test
     void testBecomeFollower() {
-        RaftNode raftNode = new RaftNode();
+
+        RaftNode raftNode = new RaftNode(null);
 
         raftNode.getPersistentState().setCurrentTerm(10);
         raftNode.getPersistentState().setVotedFor(8);
@@ -27,7 +28,7 @@ public class RaftNodeTest {
 
     @Test
     void testBecomeCandidate() {
-        RaftNode raftNode = new RaftNode();
+        RaftNode raftNode = new RaftNode(null);
         assertEquals(RaftRole.FOLLOWER, raftNode.getRaftRole());
 
         raftNode.becomeCandidate();
@@ -37,7 +38,7 @@ public class RaftNodeTest {
 
     @Test
     void testBecomeLeader() {
-        RaftNode raftNode = new RaftNode();
+        RaftNode raftNode = new RaftNode(null);
         assertEquals(RaftRole.FOLLOWER, raftNode.getRaftRole());
 
         raftNode.becomeLeader();

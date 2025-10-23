@@ -8,8 +8,6 @@ import raft.state.RaftRole;
 import raft.state.VolatileState;
 
 public class RaftNode {
-    private static int nextId = 1;
-    private final long nodeId;
     private RaftRpcServer raftRpcServer;
     private RaftRpcClient raftRpcClient;
     private LeaderState leaderState;
@@ -18,26 +16,14 @@ public class RaftNode {
     private RaftRole raftRole;
     private RaftConfig raftConfig;
 
-    public RaftNode() {
-        this.nodeId = RaftNode.nextId;
-        nextId++;
+    public RaftNode(RaftConfig raftConfig) {
         raftRpcServer = new RaftRpcServer();
         raftRpcClient = new RaftRpcClient();
         leaderState = null;
         volatileState = new VolatileState(0,0,-1);
         persistentState = new PersistentState();
         raftRole = RaftRole.FOLLOWER;
-        raftConfig = null;
-    }
-
-
-
-    public static int getNextId() {
-        return nextId;
-    }
-
-    public long getNodeId() {
-        return nodeId;
+        this.raftConfig = raftConfig;
     }
 
     public RaftRpcServer getRaftRpcServer() {
