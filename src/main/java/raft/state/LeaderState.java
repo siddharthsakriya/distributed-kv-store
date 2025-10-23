@@ -32,4 +32,5 @@ public class LeaderState {
     public int getMatchIndexById(long followerId) {
         return matchIndex.get(followerId);
     }
+
 }

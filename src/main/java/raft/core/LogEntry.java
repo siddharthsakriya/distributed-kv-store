@@ -1,9 +1,11 @@
 package raft.core;
 
+import java.util.Objects;
+
 public class LogEntry {
-    private int index;
-    private int termNumber;
-    private String stateMachineCommand;
+    private final int index;
+    private final int termNumber;
+    private final String stateMachineCommand;
 
     public LogEntry(int index, int termNumber, String stateMachineCommand) {
         this.index = index;
@@ -15,24 +17,12 @@ public class LogEntry {
         return index;
     }
 
-    public void setIndex(int index) {
-        this.index = index;
-    }
-
     public String getStateMachineCommand() {
         return stateMachineCommand;
     }
 
-    public void setStateMachineCommand(String stateMachineCommand) {
-        this.stateMachineCommand = stateMachineCommand;
-    }
-
     public int getTermNumber() {
         return termNumber;
-    }
-
-    public void setTermNumber(int termNumber) {
-        this.termNumber = termNumber;
     }
 
     @Override
@@ -42,5 +32,16 @@ public class LogEntry {
                 ", termNumber=" + termNumber +
                 ", stateMachineCommand='" + stateMachineCommand + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof LogEntry logEntry)) return false;
+        return index == logEntry.index && termNumber == logEntry.termNumber && Objects.equals(stateMachineCommand, logEntry.stateMachineCommand);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(index, termNumber, stateMachineCommand);
     }
 }
