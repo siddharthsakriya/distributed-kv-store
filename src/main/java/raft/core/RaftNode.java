@@ -2,6 +2,8 @@ package raft.core;
 
 import raft.rpc.RaftRpcClient;
 import raft.rpc.RaftRpcServer;
+import raft.rpc.RequestVoteRpcDto;
+import raft.rpc.ResponseVoteRpcDto;
 import raft.state.LeaderState;
 import raft.state.PersistentState;
 import raft.state.RaftRole;
@@ -16,13 +18,13 @@ public class RaftNode {
     private RaftRole raftRole;
     private RaftConfig raftConfig;
 
-    public RaftNode(RaftConfig raftConfig) {
+    public RaftNode(RaftConfig raftConfig, PersistentState persistentState) {
         raftRpcServer = new RaftRpcServer();
         raftRpcClient = new RaftRpcClient();
         leaderState = null;
         volatileState = new VolatileState(0,0,-1);
-        persistentState = new PersistentState();
         raftRole = RaftRole.FOLLOWER;
+        this.persistentState = persistentState;
         this.raftConfig = raftConfig;
     }
 
@@ -74,5 +76,30 @@ public class RaftNode {
 
     public void becomeLeader() {
         setRaftRole(RaftRole.LEADER);
+    }
+
+    public ResponseVoteRpcDto handleRequestVote(RequestVoteRpcDto requestVoteRpcDto) {
+        if (persistentState.getCurrentTerm() < requestVoteRpcDto.getTerm()) {
+            becomeFollower(requestVoteRpcDto.getTerm());
+        }
+
+        if (requestVoteRpcDto.getTerm() < persistentState.getCurrentTerm()) {
+            return new ResponseVoteRpcDto(persistentState.getCurrentTerm(), false);
+        }
+
+        if (persistentState.getVotedFor() != -1 && persistentState.getVotedFor() != requestVoteRpcDto.getCandidateId()) {
+            return new ResponseVoteRpcDto(persistentState.getCurrentTerm(), false);
+        }
+
+        if (persistentState.getRaftLog().lastTerm() > requestVoteRpcDto.getLastLogTerm() || (
+                persistentState.getRaftLog().lastTerm() == requestVoteRpcDto.getLastLogTerm() &&
+                        persistentState.getRaftLog().lastIndex() > requestVoteRpcDto.getLastLogIndex()
+                )) {
+            return new ResponseVoteRpcDto(persistentState.getCurrentTerm(), false);
+        }
+
+        persistentState.setVotedFor(requestVoteRpcDto.getCandidateId());
+
+        return new ResponseVoteRpcDto(persistentState.getCurrentTerm(), true);
     }
 }

@@ -14,6 +14,12 @@ public class PersistentState {
         this.raftLog = new RaftLog();
     }
 
+    public PersistentState(RaftLog raftLog) {
+        this.currentTerm = 0;
+        this.votedFor = -1;
+        this.raftLog = raftLog;
+    }
+
     public synchronized int getCurrentTerm() {
         return currentTerm;
     }

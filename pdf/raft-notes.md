@@ -1,4 +1,4 @@
-**Main Gist**
+**git**
 
 - Consensus algorithm for managing a replicated log
 
