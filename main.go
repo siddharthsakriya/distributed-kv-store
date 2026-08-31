@@ -1,0 +1,3 @@
+package distributedkvstore
+
+func main() {}
