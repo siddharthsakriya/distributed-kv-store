@@ -4,6 +4,5 @@ func isLogUpToDate(candidateLastTerm, candidateLastIndex, myLastTerm, myLastInde
 	if candidateLastTerm != myLastTerm {
 		return candidateLastTerm > myLastTerm
 	}
-
 	return candidateLastIndex >= myLastIndex
 }
