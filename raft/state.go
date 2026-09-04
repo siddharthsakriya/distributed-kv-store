@@ -1,5 +1,9 @@
 package raft
 
+import (
+	"sync"
+)
+
 type Role int
 
 const (
@@ -28,6 +32,8 @@ type LogEntry struct {
 }
 
 type Node struct {
+	mu sync.Mutex
+
 	// identity + wiring
 	id        string
 	peers     []string
