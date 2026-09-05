@@ -40,14 +40,14 @@ func (ft *FakeTransport) Disconnect(peerID string) {
 
 func (ft *FakeTransport) SendRequestVote(peerID string, args *RequestVoteArgs) (*RequestVoteReply, error) {
 	ft.mu.Lock()
-	defer ft.mu.Unlock()
-
 	handlerVal, handlerExists := ft.handlers[peerID]
+	isDown := ft.down[peerID]
+	ft.mu.Unlock()
 	if !handlerExists {
 		return nil, fmt.Errorf("peer %s not registered", peerID)
 	}
 
-	if ft.down[peerID] {
+	if isDown {
 		return nil, fmt.Errorf("peer %s disconnected", peerID)
 	}
 
