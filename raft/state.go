@@ -2,6 +2,7 @@ package raft
 
 import (
 	"sync"
+	"time"
 )
 
 type Role int
@@ -35,10 +36,12 @@ type Node struct {
 	mu sync.Mutex
 
 	// identity + wiring
-	id        string
-	peers     []string
-	transport Transport
-	persister Persister
+	id              string
+	peers           []string
+	transport       Transport
+	persister       Persister
+	lastHeard       time.Time
+	electionTimeout time.Duration
 
 	// persistent
 	currentTerm int
