@@ -1,6 +1,9 @@
 package raft
 
 func (n *Node) HandleAppendEntries(args *AppendEntriesArgs) *AppendEntriesReply {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
 	if args.Term < n.currentTerm {
 		return &AppendEntriesReply{
 			Term:    n.currentTerm,
@@ -17,5 +20,8 @@ func (n *Node) HandleAppendEntries(args *AppendEntriesArgs) *AppendEntriesReply 
 	n.resetElectionTimer()
 	n.persist()
 
-	return
+	return &AppendEntriesReply{
+		Term:    n.currentTerm,
+		Success: true,
+	}
 }
