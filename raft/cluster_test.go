@@ -83,3 +83,16 @@ func TestReelectsAfterLeaderDisconnect(t *testing.T) {
 	}
 	waitForOneLeader(t, connected, 3*time.Second)
 }
+
+func TestFakeTransport_DisconnectedSenderCannotSend(t *testing.T) {
+	ft := NewFakeTransport()
+	handlerA := &stubHandler{voteReply: &RequestVoteReply{Term: 1, VoteGranted: true}}
+	ft.Register("A", handlerA)
+
+	sender := ft.Endpoint("S")
+	ft.Disconnect("S")
+
+	if _, err := sender.SendRequestVote("A", &RequestVoteArgs{}); err == nil {
+		t.Fatal("expected error: disconnected sender should not be able to send")
+	}
+}
