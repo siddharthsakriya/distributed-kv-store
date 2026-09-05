@@ -61,7 +61,6 @@ func (n *Node) runElectionTimer() {
 }
 
 func (n *Node) startElection() {
-	// become candidate (locked)
 	n.mu.Lock()
 	n.currentTerm++
 	n.votedFor = n.id
@@ -75,7 +74,6 @@ func (n *Node) startElection() {
 
 	globalVoteTally := 1
 
-	// send request to vote rpcs out
 	for _, peerID := range n.peers {
 		go func(peerID string) {
 			args := &RequestVoteArgs{
@@ -112,6 +110,7 @@ func (n *Node) startElection() {
 				globalVoteTally++
 				if n.isMajorityVote(globalVoteTally) {
 					n.role = Leader
+					go n.runHeartbeats()
 				}
 			}
 			n.mu.Unlock()
