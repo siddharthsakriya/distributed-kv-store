@@ -5,13 +5,20 @@ import (
 	"sync"
 )
 
+type fakeEndpoint struct {
+	id  string
+	net *FakeTransport
+}
+
+func (ft *FakeTransport) Endpoint(id string) *fakeEndpoint {
+	return &fakeEndpoint{id: id, net: ft}
+}
+
 type FakeTransport struct {
 	handlers map[string]RPCHandler
 	down     map[string]bool
 	mu       sync.Mutex
 }
-
-var _ Transport = (*FakeTransport)(nil)
 
 func NewFakeTransport() *FakeTransport {
 	return &FakeTransport{
@@ -19,6 +26,8 @@ func NewFakeTransport() *FakeTransport {
 		down:     make(map[string]bool),
 	}
 }
+
+var _ Transport = (*fakeEndpoint)(nil)
 
 func (ft *FakeTransport) Register(peerID string, handler RPCHandler) {
 	ft.mu.Lock()
@@ -38,36 +47,34 @@ func (ft *FakeTransport) Disconnect(peerID string) {
 	ft.down[peerID] = true
 }
 
-func (ft *FakeTransport) SendRequestVote(peerID string, args *RequestVoteArgs) (*RequestVoteReply, error) {
-	ft.mu.Lock()
-	handlerVal, handlerExists := ft.handlers[peerID]
-	isDown := ft.down[peerID]
-	ft.mu.Unlock()
-	if !handlerExists {
+func (e *fakeEndpoint) SendRequestVote(peerID string, args *RequestVoteArgs) (*RequestVoteReply, error) {
+	e.net.mu.Lock()
+	handler, ok := e.net.handlers[peerID]
+	senderDown := e.net.down[e.id]
+	targetDown := e.net.down[peerID]
+	e.net.mu.Unlock()
+
+	if !ok {
 		return nil, fmt.Errorf("peer %s not registered", peerID)
 	}
-
-	if isDown {
-		return nil, fmt.Errorf("peer %s disconnected", peerID)
+	if senderDown || targetDown {
+		return nil, fmt.Errorf("cannot reach %s from %s", peerID, e.id)
 	}
-
-	result := handlerVal.HandleRequestVote(args)
-	return result, nil
+	return handler.HandleRequestVote(args), nil
 }
 
-func (ft *FakeTransport) SendAppendEntries(peerID string, args *AppendEntriesArgs) (*AppendEntriesReply, error) {
-	ft.mu.Lock()
-	defer ft.mu.Unlock()
+func (e *fakeEndpoint) SendAppendEntries(peerID string, args *AppendEntriesArgs) (*AppendEntriesReply, error) {
+	e.net.mu.Lock()
+	handler, ok := e.net.handlers[peerID]
+	senderDown := e.net.down[e.id]
+	targetDown := e.net.down[peerID]
+	e.net.mu.Unlock()
 
-	handlerVal, handlerExists := ft.handlers[peerID]
-	if !handlerExists {
+	if !ok {
 		return nil, fmt.Errorf("peer %s not registered", peerID)
 	}
-
-	if ft.down[peerID] {
-		return nil, fmt.Errorf("peer %s disconnected", peerID)
+	if senderDown || targetDown {
+		return nil, fmt.Errorf("cannot reach %s from %s", peerID, e.id)
 	}
-
-	result := handlerVal.HandleAppendEntries(args)
-	return result, nil
+	return handler.HandleAppendEntries(args), nil
 }
