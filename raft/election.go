@@ -112,7 +112,7 @@ func (n *Node) startElection() {
 					n.role = Leader
 					// initialise nextIndex and matchIndex maps
 					n.constructLeaderMaps()
-					go n.runHeartbeats()
+					go n.runReplication()
 				}
 			}
 			n.mu.Unlock()

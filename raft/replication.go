@@ -40,7 +40,7 @@ func (n *Node) HandleAppendEntries(args *AppendEntriesArgs) *AppendEntriesReply 
 	}
 }
 
-func (n *Node) runHeartbeats() {
+func (n *Node) runReplication() {
 	for {
 		n.mu.Lock()
 		role := n.role
