@@ -5,11 +5,21 @@ import (
 	"time"
 )
 
+/*** types + consts ***/
+
 const (
 	// hardcoded upper and lower bounds for now according to what is specified in the paper, maybe could generalise :0
 	minTimeout = 150 * time.Millisecond
 	maxTimeout = 300 * time.Millisecond
 )
+
+type SubmitResult struct {
+	Index    int
+	Term     int
+	IsLeader bool
+}
+
+/*** main functions ***/
 
 func (n *Node) HandleRequestVote(args *RequestVoteArgs) *RequestVoteReply {
 	n.mu.Lock()
@@ -43,6 +53,32 @@ func (n *Node) HandleRequestVote(args *RequestVoteArgs) *RequestVoteReply {
 	return &RequestVoteReply{
 		Term:        n.currentTerm,
 		VoteGranted: true,
+	}
+}
+
+func (n *Node) Submit(command []byte) *SubmitResult {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	isLeader := n.role == Leader
+	if !isLeader {
+		return &SubmitResult{
+			IsLeader: false,
+		}
+	}
+	index := n.lastLogIndex() + 1
+	term := n.currentTerm
+	entry := LogEntry{
+		Index:   index,
+		Term:    term,
+		Command: command,
+	}
+	n.log = append(n.log, entry)
+	n.persist()
+
+	return &SubmitResult{
+		Index:    index,
+		Term:     term,
+		IsLeader: true,
 	}
 }
 
