@@ -110,7 +110,9 @@ func (n *Node) startElection() {
 				globalVoteTally++
 				if n.isMajorityVote(globalVoteTally) {
 					n.role = Leader
-					go n.runHeartbeats()
+					// initialise nextIndex and matchIndex maps
+					n.constructLeaderMaps()
+					go n.runReplication()
 				}
 			}
 			n.mu.Unlock()
@@ -125,6 +127,16 @@ func isLogUpToDate(candidateLastTerm int, candidateLastIndex int, myLastTerm int
 		return candidateLastTerm > myLastTerm
 	}
 	return candidateLastIndex >= myLastIndex
+}
+
+func (n *Node) constructLeaderMaps() {
+	n.nextIndex = make(map[string]int)
+	n.matchIndex = make(map[string]int)
+	lastLogIndex := n.lastLogIndex()
+	for _, initPeerID := range n.peers {
+		n.nextIndex[initPeerID] = lastLogIndex + 1
+		n.matchIndex[initPeerID] = 0
+	}
 }
 
 func (n *Node) isMajorityVote(globalVoteTally int) bool {
