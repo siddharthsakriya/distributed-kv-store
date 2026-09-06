@@ -132,8 +132,9 @@ func isLogUpToDate(candidateLastTerm int, candidateLastIndex int, myLastTerm int
 func (n *Node) constructLeaderMaps() {
 	n.nextIndex = make(map[string]int)
 	n.matchIndex = make(map[string]int)
+	lastLogIndex := n.lastLogIndex()
 	for _, initPeerID := range n.peers {
-		n.nextIndex[initPeerID] = n.lastLogIndex() + 1
+		n.nextIndex[initPeerID] = lastLogIndex + 1
 		n.matchIndex[initPeerID] = 0
 	}
 }
