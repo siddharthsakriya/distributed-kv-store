@@ -8,6 +8,12 @@ const (
 	heartBeatInterval = 50 * time.Millisecond
 )
 
+type SubmitResult struct {
+	Index    int
+	Term     int
+	IsLeader bool
+}
+
 func (n *Node) HandleAppendEntries(args *AppendEntriesArgs) *AppendEntriesReply {
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -66,5 +72,31 @@ func (n *Node) runHeartbeats() {
 			}(peerID)
 		}
 		time.Sleep(heartBeatInterval)
+	}
+}
+
+func (n *Node) Submit(command []byte) *SubmitResult {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	isLeader := n.role == Leader
+	if !isLeader {
+		return &SubmitResult{
+			IsLeader: false,
+		}
+	}
+	index := n.lastLogIndex() + 1
+	term := n.currentTerm
+	entry := LogEntry{
+		Index:   index,
+		Term:    term,
+		Command: command,
+	}
+	n.log = append(n.log, entry)
+	n.persist()
+
+	return &SubmitResult{
+		Index:    index,
+		Term:     term,
+		IsLeader: true,
 	}
 }
