@@ -34,6 +34,32 @@ func (n *Node) HandleAppendEntries(args *AppendEntriesArgs) *AppendEntriesReply 
 	n.resetElectionTimer()
 	n.persist()
 
+	prevLogTerm := n.entryTerm(args.PrevLogIndex)
+	if prevLogTerm != args.PrevLogTerm {
+		return &AppendEntriesReply{
+			Term:    n.currentTerm,
+			Success: false,
+		}
+	}
+
+	// entries should slot in contiguously due to the term check (entryTerm when idx doesnt exist in log entries)
+	for _, entry := range args.Entries {
+		idx := entry.Index
+		lastLogIndex := n.lastLogIndex()
+		if idx > lastLogIndex {
+			n.log = append(n.log, entry)
+		} else if n.entryTerm(entry.Index) != entry.Term {
+			n.log = n.log[:entry.Index-1]
+			n.log = append(n.log, entry)
+		}
+	}
+
+	if args.LeaderCommit > n.commitIndex {
+		n.commitIndex = min(args.LeaderCommit, args.PrevLogIndex+len(args.Entries))
+	}
+
+	n.persist()
+
 	return &AppendEntriesReply{
 		Term:    n.currentTerm,
 		Success: true,
@@ -51,10 +77,23 @@ func (n *Node) runReplication() {
 		}
 		for _, peerID := range n.peers {
 			go func(peerID string) {
+				n.mu.Lock()
+				peerNextIndex := n.nextIndex[peerID]
+				prevLogIndex := peerNextIndex - 1
+				prevLogTerm := n.entryTerm(prevLogIndex)
+				entries := n.entriesFrom(peerNextIndex)
+				leaderCommit := n.commitIndex
+				n.mu.Unlock()
+
 				args := &AppendEntriesArgs{
-					Term:     currentTerm,
-					LeaderID: n.id,
+					Term:         currentTerm,
+					LeaderID:     n.id,
+					PrevLogIndex: prevLogIndex,
+					PrevLogTerm:  prevLogTerm,
+					Entries:      entries,
+					LeaderCommit: leaderCommit,
 				}
+
 				reply, err := n.transport.SendAppendEntries(peerID, args)
 
 				if err != nil {
@@ -62,13 +101,33 @@ func (n *Node) runReplication() {
 				}
 
 				n.mu.Lock()
+				defer n.mu.Unlock()
+
+				// handle stale response
+				if n.role != Leader || n.currentTerm != currentTerm {
+					return
+				}
+
 				if reply.Term > n.currentTerm {
 					n.role = Follower
 					n.currentTerm = reply.Term
 					n.votedFor = ""
 					n.persist()
+					return
 				}
-				n.mu.Unlock()
+
+				if reply.Success {
+					newMatch := prevLogIndex + len(entries)
+					if newMatch > n.matchIndex[peerID] {
+						n.matchIndex[peerID] = newMatch
+						n.nextIndex[peerID] = newMatch + 1
+					}
+				} else {
+					if n.nextIndex[peerID] > 1 {
+						// try lower index in next iter
+						n.nextIndex[peerID]--
+					}
+				}
 			}(peerID)
 		}
 		time.Sleep(heartBeatInterval)
@@ -99,4 +158,19 @@ func (n *Node) Submit(command []byte) *SubmitResult {
 		Term:     term,
 		IsLeader: true,
 	}
+}
+
+/*** Helpers ***/
+func (n *Node) entryTerm(idx int) int {
+	if idx <= 0 || idx > n.lastLogIndex() {
+		return 0
+	}
+	return n.log[idx-1].Term
+}
+
+func (n *Node) entriesFrom(idx int) []LogEntry {
+	if idx <= 1 {
+		return n.log
+	}
+	return n.log[idx-1:]
 }
