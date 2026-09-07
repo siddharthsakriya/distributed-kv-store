@@ -42,7 +42,7 @@ func (n *Node) HandleAppendEntries(args *AppendEntriesArgs) *AppendEntriesReply 
 		}
 	}
 
-	// entries should slot in contiguously due to the term check (entryTerm when idx doesnt exist in log entries)
+	// entries should slot in contiguously due to the term check (entryTerm when idx doesnt exist in log entries, thus send 0)
 	for _, entry := range args.Entries {
 		idx := entry.Index
 		lastLogIndex := n.lastLogIndex()
@@ -121,6 +121,7 @@ func (n *Node) runReplication() {
 					if newMatch > n.matchIndex[peerID] {
 						n.matchIndex[peerID] = newMatch
 						n.nextIndex[peerID] = newMatch + 1
+						n.advanceCommitIndex()
 					}
 				} else {
 					if n.nextIndex[peerID] > 1 {
@@ -173,4 +174,26 @@ func (n *Node) entriesFrom(idx int) []LogEntry {
 		return n.log
 	}
 	return n.log[idx-1:]
+}
+
+func (n *Node) advanceCommitIndex() {
+
+	// top down (trying highest possible)
+	for idx := n.lastLogIndex(); idx > n.commitIndex; idx-- {
+		// ensure we only commit entries from our term
+		if n.entryTerm(idx) != n.currentTerm {
+			continue
+		}
+
+		count := 1
+		for _, peerID := range n.peers {
+			if n.matchIndex[peerID] >= idx {
+				count++
+			}
+		}
+		if n.isMajorityVote(count) {
+			n.commitIndex = idx
+			break
+		}
+	}
 }
