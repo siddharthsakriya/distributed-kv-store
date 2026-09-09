@@ -72,8 +72,9 @@ func (n *Node) runReplication() {
 		n.mu.Lock()
 		role := n.role
 		currentTerm := n.currentTerm
+		stopped := n.stopped
 		n.mu.Unlock()
-		if role != Leader {
+		if stopped || role != Leader {
 			return
 		}
 		for _, peerID := range n.peers {

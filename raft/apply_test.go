@@ -130,6 +130,11 @@ func one(t *testing.T, nodes []*Node, tracker *applyTracker, cmd []byte, expecte
 
 func TestBasicApply(t *testing.T) {
 	nodes, _, tracker := makeApplyCluster(t, 3)
+	defer func() {
+		for _, node := range nodes {
+			node.Stop()
+		}
+	}()
 	waitForOneLeader(t, nodes, 3*time.Second)
 
 	one(t, nodes, tracker, []byte("cmd1"), len(nodes))
