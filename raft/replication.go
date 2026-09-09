@@ -163,10 +163,14 @@ func (n *Node) Submit(command []byte) *SubmitResult {
 
 /*** Helpers ***/
 func (n *Node) entryTerm(idx int) int {
+	return n.entryAt(idx).Term
+}
+
+func (n *Node) entryAt(idx int) LogEntry {
 	if idx <= 0 || idx > n.lastLogIndex() {
-		return 0
+		return LogEntry{}
 	}
-	return n.log[idx-1].Term
+	return n.log[idx-1]
 }
 
 func (n *Node) entriesFrom(idx int) []LogEntry {
