@@ -56,6 +56,7 @@ func (n *Node) HandleAppendEntries(args *AppendEntriesArgs) *AppendEntriesReply 
 
 	if args.LeaderCommit > n.commitIndex {
 		n.commitIndex = min(args.LeaderCommit, args.PrevLogIndex+len(args.Entries))
+		n.applyCond.Signal()
 	}
 
 	n.persist()
@@ -197,6 +198,7 @@ func (n *Node) advanceCommitIndex() {
 		}
 		if n.isMajorityVote(count) {
 			n.commitIndex = idx
+			n.applyCond.Signal()
 			break
 		}
 	}
