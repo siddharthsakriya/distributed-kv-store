@@ -61,7 +61,7 @@ func waitForOneLeader(t *testing.T, nodes []*Node, timeout time.Duration) *Node 
 func TestElectsOneLeader(t *testing.T) {
 	nodes, _ := makeCluster(3)
 	for _, node := range nodes {
-		go node.runElectionTimer()
+		go node.Start()
 	}
 	waitForOneLeader(t, nodes, 3*time.Second)
 }
@@ -69,7 +69,7 @@ func TestElectsOneLeader(t *testing.T) {
 func TestReelectsAfterLeaderDisconnect(t *testing.T) {
 	nodes, ft := makeCluster(3)
 	for _, node := range nodes {
-		go node.runElectionTimer()
+		go node.Start()
 	}
 	leader := waitForOneLeader(t, nodes, 3*time.Second)
 

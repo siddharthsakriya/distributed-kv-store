@@ -44,6 +44,7 @@ type Node struct {
 	lastHeard       time.Time
 	electionTimeout time.Duration
 	applyCond       *sync.Cond
+	stopped         bool
 
 	// persistent
 	currentTerm int

@@ -105,7 +105,7 @@ func (n *Node) runReplication() {
 				defer n.mu.Unlock()
 
 				// handle stale response
-				if n.role != Leader || n.currentTerm != currentTerm {
+				if n.role != Leader || n.currentTerm != currentTerm || n.stopped {
 					return
 				}
 

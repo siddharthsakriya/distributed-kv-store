@@ -8,7 +8,7 @@ type ApplyMsg struct {
 func (n *Node) runApplyLoop() {
 	for {
 		n.mu.Lock()
-		for !(n.commitIndex > n.lastApplied) {
+		for !n.stopped && !(n.commitIndex > n.lastApplied) {
 			n.applyCond.Wait()
 		}
 		msgs := []ApplyMsg{}

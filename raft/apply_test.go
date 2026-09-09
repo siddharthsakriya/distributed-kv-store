@@ -95,8 +95,7 @@ func makeApplyCluster(t *testing.T, n int) ([]*Node, *FakeTransport, *applyTrack
 	}
 
 	for _, node := range nodes {
-		go node.runElectionTimer()
-		go node.runApplyLoop()
+		go node.Start()
 	}
 	return nodes, ft, tracker
 }
