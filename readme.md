@@ -5,7 +5,6 @@ A distributed, fault-tolerant key-value store built on Raft...
 [![CI](https://github.com/siddharthsakriya/distributed-kv-store/actions/workflows/ci.yml/badge.svg)](https://github.com/siddharthsakriya/distributed-kv-store/actions/workflows/ci.yml)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/siddharthsakriya/distributed-kv-store)
 [![Go Reference](https://pkg.go.dev/badge/github.com/siddharthsakriya/distributed-kv-store.svg)](https://pkg.go.dev/github.com/siddharthsakriya/distributed-kv-store)
-![Last commit](https://img.shields.io/github/last-commit/siddharthsakriya/distributed-kv-store)
 
 ## KV Store
 WIP
