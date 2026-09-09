@@ -1,5 +1,11 @@
 # Distributed KV Store
+
+A distributed, fault-tolerant key-value store built on Raft...
+
 [![CI](https://github.com/siddharthsakriya/distributed-kv-store/actions/workflows/ci.yml/badge.svg)](https://github.com/siddharthsakriya/distributed-kv-store/actions/workflows/ci.yml)
+![Go Version](https://img.shields.io/github/go-mod/go-version/siddharthsakriya/distributed-kv-store)
+[![Go Reference](https://pkg.go.dev/badge/github.com/siddharthsakriya/distributed-kv-store.svg)](https://pkg.go.dev/github.com/siddharthsakriya/distributed-kv-store)
+![Last commit](https://img.shields.io/github/last-commit/siddharthsakriya/distributed-kv-store)
 
 ## KV Store
 WIP
@@ -20,8 +26,8 @@ Core consensus is implemented and tested under the race detector:
 - [x] **Apply loop** — committed entries delivered in order, exactly once, on an apply channel
 - [x] **Lifecycle** — `Start`/`Stop` with clean goroutine shutdown
 - [x] Persistence crash-recovery and Figure 8 safety tests (logic is in place, dedicated tests pending)
-- [] Additional failure-path tests (partition, kill-leader-mid-flight, log repair)
-- [] A real network transport (only an in-memory `FakeTransport` exists, used for tests)
+- [ ] Additional failure-path tests (partition, kill-leader-mid-flight, log repair)
+- [ ] A real network transport (only an in-memory `FakeTransport` exists, used for tests)
 
 ### Design
 
