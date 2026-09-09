@@ -51,9 +51,13 @@ func (n *Node) runElectionTimer() {
 		time.Sleep(10 * time.Millisecond)
 
 		n.mu.Lock()
+		if n.stopped {
+			n.mu.Unlock()
+			return
+		}
+
 		shouldElect := n.role != Leader && time.Since(n.lastHeard) > n.electionTimeout
 		n.mu.Unlock()
-
 		if shouldElect {
 			n.startElection()
 		}

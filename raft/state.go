@@ -40,8 +40,11 @@ type Node struct {
 	peers           []string
 	transport       Transport
 	persister       Persister
+	applyCh         chan ApplyMsg
 	lastHeard       time.Time
 	electionTimeout time.Duration
+	applyCond       *sync.Cond
+	stopped         bool
 
 	// persistent
 	currentTerm int
@@ -63,6 +66,7 @@ type Config struct {
 	Peers     []string
 	Transport Transport
 	Persister Persister
+	ApplyCh   chan ApplyMsg
 }
 
 func NewNode(cfg Config) *Node {
@@ -74,13 +78,18 @@ func NewNode(cfg Config) *Node {
 		currentTerm, votedFor, log = cfg.Persister.Load()
 	}
 
-	return &Node{
+	n := &Node{
 		id:          cfg.ID,
 		peers:       cfg.Peers,
 		transport:   cfg.Transport,
 		persister:   cfg.Persister,
+		applyCh:     cfg.ApplyCh,
 		currentTerm: currentTerm,
 		votedFor:    votedFor,
 		log:         log,
 	}
+
+	n.applyCond = sync.NewCond(&n.mu)
+
+	return n
 }

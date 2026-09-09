@@ -56,6 +56,7 @@ func (n *Node) HandleAppendEntries(args *AppendEntriesArgs) *AppendEntriesReply 
 
 	if args.LeaderCommit > n.commitIndex {
 		n.commitIndex = min(args.LeaderCommit, args.PrevLogIndex+len(args.Entries))
+		n.applyCond.Signal()
 	}
 
 	n.persist()
@@ -71,8 +72,9 @@ func (n *Node) runReplication() {
 		n.mu.Lock()
 		role := n.role
 		currentTerm := n.currentTerm
+		stopped := n.stopped
 		n.mu.Unlock()
-		if role != Leader {
+		if stopped || role != Leader {
 			return
 		}
 		for _, peerID := range n.peers {
@@ -104,7 +106,7 @@ func (n *Node) runReplication() {
 				defer n.mu.Unlock()
 
 				// handle stale response
-				if n.role != Leader || n.currentTerm != currentTerm {
+				if n.role != Leader || n.currentTerm != currentTerm || n.stopped {
 					return
 				}
 
@@ -163,10 +165,14 @@ func (n *Node) Submit(command []byte) *SubmitResult {
 
 /*** Helpers ***/
 func (n *Node) entryTerm(idx int) int {
+	return n.entryAt(idx).Term
+}
+
+func (n *Node) entryAt(idx int) LogEntry {
 	if idx <= 0 || idx > n.lastLogIndex() {
-		return 0
+		return LogEntry{}
 	}
-	return n.log[idx-1].Term
+	return n.log[idx-1]
 }
 
 func (n *Node) entriesFrom(idx int) []LogEntry {
@@ -193,6 +199,7 @@ func (n *Node) advanceCommitIndex() {
 		}
 		if n.isMajorityVote(count) {
 			n.commitIndex = idx
+			n.applyCond.Signal()
 			break
 		}
 	}
