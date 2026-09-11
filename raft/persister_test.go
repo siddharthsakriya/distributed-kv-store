@@ -37,7 +37,7 @@ func TestPersister(t *testing.T) {
 		}
 		n0.persist()
 
-		// pretending n0
+		// pretending n0 has come down and restarted
 		n0Restarted := NewNode(Config{ID: "n0", Peers: []string{"n0", "n2", "n3", "n4"}, Persister: persister})
 
 		response := n0Restarted.HandleRequestVote(
