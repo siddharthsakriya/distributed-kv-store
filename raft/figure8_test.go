@@ -26,7 +26,7 @@ func TestFigure8CommitGuard(t *testing.T) {
 		n.advanceCommitIndex()
 
 		if n.commitIndex != 0 {
-			t.Fatalf("commitIndex advanced to %d, an old-term entry must not commit by count", n.commitIndex)
+			t.Fatalf("commitIndex is at to %d, the commit index should be %d", n.commitIndex, 3)
 		}
 
 	})
