@@ -66,7 +66,7 @@ func TestElectsOneLeader(t *testing.T) {
 		}
 	}()
 	for _, node := range nodes {
-		go node.Start()
+		node.Start()
 	}
 	waitForOneLeader(t, nodes, 3*time.Second)
 }
@@ -80,7 +80,7 @@ func TestReelectsAfterLeaderDisconnect(t *testing.T) {
 	}()
 
 	for _, node := range nodes {
-		go node.Start()
+		node.Start()
 	}
 	leader := waitForOneLeader(t, nodes, 3*time.Second)
 
