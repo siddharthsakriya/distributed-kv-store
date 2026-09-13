@@ -3,6 +3,7 @@ package raft
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -140,4 +141,114 @@ func TestBasicApply(t *testing.T) {
 	one(t, nodes, tracker, []byte("cmd1"), len(nodes))
 	one(t, nodes, tracker, []byte("cmd2"), len(nodes))
 	one(t, nodes, tracker, []byte("cmd3"), len(nodes))
+}
+
+func TestLogDivergenceNoSubmit(t *testing.T) {
+	nodes, _ := makeCluster(3)
+	defer func() {
+		for _, node := range nodes {
+			node.Stop()
+		}
+	}()
+
+	// seeding the nodes terms
+	nodes[0].currentTerm = 1
+	nodes[1].currentTerm = 2
+	nodes[2].currentTerm = 2
+
+	//seeding the nodes logs
+	nodes[0].log = []LogEntry{
+		{Index: 1, Term: 1},
+		{Index: 2, Term: 1},
+	}
+
+	nodes[1].log = []LogEntry{
+		{Index: 1, Term: 2},
+		{Index: 2, Term: 2},
+	}
+
+	nodes[2].log = []LogEntry{
+		{Index: 1, Term: 2},
+		{Index: 2, Term: 2},
+	}
+
+	for _, node := range nodes {
+		node.Start()
+	}
+
+	leader := waitForOneLeader(t, nodes, 3*time.Second)
+	deadline := time.Now().Add(4 * time.Second)
+
+	for time.Now().Before(deadline) {
+		leader.mu.Lock()
+		leaderLog := append([]LogEntry(nil), leader.log...)
+		leader.mu.Unlock()
+
+		nodes[0].mu.Lock()
+		followerLog := append([]LogEntry(nil), nodes[0].log...)
+		nodes[0].mu.Unlock()
+
+		if reflect.DeepEqual(leaderLog, followerLog) {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("follower log never converged to leader's")
+}
+
+func TestLogDivergenceWithSubmit(t *testing.T) {
+	nodes, _ := makeCluster(3)
+	defer func() {
+		for _, node := range nodes {
+			node.Stop()
+		}
+	}()
+
+	// seeding the nodes terms
+	nodes[0].currentTerm = 1
+	nodes[1].currentTerm = 2
+	nodes[2].currentTerm = 2
+
+	//seeding the nodes logs
+	nodes[0].log = []LogEntry{
+		{Index: 1, Term: 1},
+		{Index: 2, Term: 1},
+	}
+
+	nodes[1].log = []LogEntry{
+		{Index: 1, Term: 2},
+		{Index: 2, Term: 2},
+	}
+
+	nodes[2].log = []LogEntry{
+		{Index: 1, Term: 2},
+		{Index: 2, Term: 2},
+	}
+
+	for _, node := range nodes {
+		node.Start()
+	}
+
+	leader := waitForOneLeader(t, nodes, 3*time.Second)
+
+	leader.Submit([]byte("cmd1"))
+	leader.Submit([]byte("cmd2"))
+
+	deadline := time.Now().Add(4 * time.Second)
+
+	for time.Now().Before(deadline) {
+		leader.mu.Lock()
+		leaderLog := append([]LogEntry(nil), leader.log...)
+		leader.mu.Unlock()
+
+		nodes[0].mu.Lock()
+		followerLog := append([]LogEntry(nil), nodes[0].log...)
+		nodes[0].mu.Unlock()
+
+		if reflect.DeepEqual(leaderLog, followerLog) {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("follower log never converged to leader's")
 }
