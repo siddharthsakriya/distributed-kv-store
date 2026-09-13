@@ -18,7 +18,7 @@ func TestFakeKV(t *testing.T) {
 		})
 		res := fakeStore.Apply([]byte(payload))
 		if !bytes.Equal(res, []byte("OK")) || !bytes.Equal(fakeStore.Store["x"], []byte("1")) {
-			t.Fatalf("Basic put test failed")
+			t.Fatal("Basic put test failed")
 		}
 	})
 
@@ -34,7 +34,22 @@ func TestFakeKV(t *testing.T) {
 		})
 		res := fakeStore.Apply([]byte(payload))
 		if !bytes.Equal(res, []byte("1")) {
-			t.Fatalf("Basic get test failed")
+			t.Fatal("Basic get test failed")
+		}
+	})
+
+	t.Run("test get on missing key returns nil", func(t *testing.T) {
+		fakeStore := FakeKV{
+			Store: make(map[string][]byte),
+		}
+		payload, _ := json.Marshal(Command{
+			Action: "GET",
+			Key:    "missing",
+			Val:    nil,
+		})
+		res := fakeStore.Apply(payload)
+		if res != nil {
+			t.Fatal("Missing key test failed")
 		}
 	})
 
@@ -51,7 +66,7 @@ func TestFakeKV(t *testing.T) {
 		res := fakeStore.Apply([]byte(payload))
 		_, ok := fakeStore.Store["x"]
 		if !bytes.Equal(res, []byte("OK")) || ok {
-			t.Fatalf("Basic delete test failed")
+			t.Fatal("Basic delete test failed")
 		}
 	})
 
@@ -66,7 +81,7 @@ func TestFakeKV(t *testing.T) {
 		})
 		res := fakeStore.Apply([]byte(payload))
 		if !bytes.Equal(res, []byte("action not allowed")) {
-			t.Fatalf("Basic delete test failed")
+			t.Fatal("Non-existant action test failed")
 		}
 	})
 }
