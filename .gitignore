@@ -33,3 +33,6 @@ go.work.sum
 
 # Personal Notes
 notes/
+
+# Misc
+.DS_Store
