@@ -1,6 +1,6 @@
 syntax = "proto3";
 package raft.v1;
-option go_package = "github.com/siddharthsakriya/distributed-kv-store/proto/gen;raftpb";
+option go_package = "github.com/siddharthsakriya/distributed-kv-store/proto/gen/raft/v1;raftpb";
 
 service RaftService {
     rpc RequestVote(RequestVoteRequest) returns (RequestVoteResponse);
