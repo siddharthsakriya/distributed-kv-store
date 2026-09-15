@@ -20,7 +20,7 @@ type Transport struct {
 
 var _ raft.Transport = (*Transport)(nil)
 
-func New(addrs map[string]string) *Transport {
+func NewTransport(addrs map[string]string) *Transport {
 	return &Transport{
 		addrs:   addrs,
 		clients: make(map[string]raftpb.RaftServiceClient),
