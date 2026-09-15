@@ -81,7 +81,9 @@ func (t *Transport) Close() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	for _, conn := range t.conns {
-		conn.Close()
+		_ = conn.Close()
 	}
+	t.conns = make(map[string]*grpc.ClientConn)
+	t.clients = make(map[string]raftpb.RaftServiceClient)
 	return nil
 }
