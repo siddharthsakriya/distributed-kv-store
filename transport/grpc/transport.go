@@ -18,11 +18,13 @@ type Transport struct {
 	conns   map[string]*grpc.ClientConn
 }
 
+var _ raft.Transport = (*Transport)(nil)
+
 func New(addrs map[string]string) *Transport {
 	return &Transport{
 		addrs:   addrs,
 		clients: make(map[string]raftpb.RaftServiceClient),
-		conns:   map[string]*grpc.ClientConn{},
+		conns:   make(map[string]*grpc.ClientConn),
 	}
 }
 
@@ -73,4 +75,13 @@ func (t *Transport) SendAppendEntries(peerID string, args *raft.AppendEntriesArg
 		return nil, err
 	}
 	return raftAppendEntriesResponse(response), nil
+}
+
+func (t *Transport) Close() error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for _, conn := range t.conns {
+		conn.Close()
+	}
+	return nil
 }
