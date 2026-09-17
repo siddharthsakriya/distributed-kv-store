@@ -22,7 +22,7 @@ func Load(path string) (Config, error) {
 		return Config{}, fmt.Errorf("read config %s: %w", path, err)
 	}
 	var cfg Config
-	err = yaml.Unmarshal(data, cfg)
+	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		return Config{}, fmt.Errorf("parse config %s: %w", path, err)
 	}
