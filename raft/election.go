@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"log"
 	"math/rand/v2"
 	"time"
 )
@@ -37,6 +38,7 @@ func (n *Node) HandleRequestVote(args *RequestVoteArgs) *RequestVoteReply {
 	}
 
 	n.votedFor = args.CandidateID
+	log.Printf("[%s] voted for %s in term %d", n.id, args.CandidateID, n.currentTerm)
 	n.resetElectionTimer()
 	n.persist()
 
@@ -69,6 +71,7 @@ func (n *Node) startElection() {
 	n.currentTerm++
 	n.votedFor = n.id
 	n.role = Candidate
+	log.Printf("[%s] starting election for term %d", n.id, n.currentTerm)
 	n.resetElectionTimer()
 	n.persist()
 	term := n.currentTerm
@@ -98,6 +101,7 @@ func (n *Node) startElection() {
 			if reply.Term > n.currentTerm {
 				n.role = Follower
 				n.currentTerm = reply.Term
+				log.Printf("[%s] stepping down to follower, term %d", n.id, n.currentTerm)
 				n.votedFor = ""
 				n.persist()
 				n.mu.Unlock()
@@ -114,6 +118,7 @@ func (n *Node) startElection() {
 				globalVoteTally++
 				if n.isMajorityVote(globalVoteTally) {
 					n.role = Leader
+					log.Printf("[%s] became LEADER for term %d", n.id, n.currentTerm)
 					// initialise nextIndex and matchIndex maps
 					n.constructLeaderMaps()
 					go n.runReplication()
