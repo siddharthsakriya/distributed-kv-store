@@ -1,0 +1,7 @@
+nodes:
+  - id: n0
+    addr: localhost:9000
+  - id: n1
+    addr: localhost:9001
+  - id: n2
+    addr: localhost:9002
