@@ -11,6 +11,7 @@ import (
 	"github.com/siddharthsakriya/distributed-kv-store/cluster"
 	raftpb "github.com/siddharthsakriya/distributed-kv-store/proto/gen/raft/v1"
 	"github.com/siddharthsakriya/distributed-kv-store/raft"
+	"github.com/siddharthsakriya/distributed-kv-store/server"
 	grpctransport "github.com/siddharthsakriya/distributed-kv-store/transport/grpc"
 	"google.golang.org/grpc"
 )
@@ -38,11 +39,13 @@ func main() {
 		peerIDs = append(peerIDs, pid)
 	}
 	transport := grpctransport.NewTransport(peers)
-
+	applyCh := make(chan raft.ApplyMsg, 256)
+	kv := &server.FakeKV{Store: make(map[string][]byte)}
 	node := raft.NewNode(raft.Config{
 		ID:        *id,
 		Peers:     peerIDs,
 		Transport: transport,
+		ApplyCh:   applyCh,
 	})
 
 	lis, err := net.Listen("tcp", myAddr)
@@ -56,6 +59,13 @@ func main() {
 		log.Printf("[%s] raft gRPC listening on %s", *id, myAddr)
 		if err := grpcSrv.Serve(lis); err != nil {
 			log.Fatalf("serve: %v", err)
+		}
+	}()
+
+	go func() {
+		for msg := range applyCh {
+			kv.Apply(msg.Command)
+			log.Printf("[%s] applied idx=%d", *id, msg.Index)
 		}
 	}()
 
