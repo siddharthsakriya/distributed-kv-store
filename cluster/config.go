@@ -12,8 +12,9 @@ type Config struct {
 }
 
 type NodeConfig struct {
-	ID   string `yaml:"id"`
-	Addr string `yaml:"addr"`
+	ID         string `yaml:"id"`
+	Addr       string `yaml:"addr"`
+	ClientAddr string `yaml:"client_addr"`
 }
 
 func Load(path string) (Config, error) {
@@ -32,19 +33,20 @@ func Load(path string) (Config, error) {
 	return cfg, nil
 }
 
-func (c Config) View(myID string) (myAddr string, peers map[string]string, err error) {
+func (c Config) View(myID string) (myAddr string, myClientAddr string, peers map[string]string, err error) {
 	peers = make(map[string]string)
 	found := false
 	for _, n := range c.Nodes {
 		if n.ID == myID {
 			myAddr = n.Addr
+			myClientAddr = n.ClientAddr
 			found = true
 		} else {
 			peers[n.ID] = n.Addr
 		}
 	}
 	if !found {
-		return "", nil, fmt.Errorf("id %q not found in config", myID)
+		return "", "", nil, fmt.Errorf("id %q not found in config", myID)
 	}
-	return myAddr, peers, nil
+	return myAddr, myClientAddr, peers, nil
 }
