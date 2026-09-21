@@ -50,13 +50,13 @@ nodes:
 
 func TestView(t *testing.T) {
 	cfg := Config{Nodes: []NodeConfig{
-		{ID: "n0", Addr: "localhost:9000"},
-		{ID: "n1", Addr: "localhost:9001"},
-		{ID: "n2", Addr: "localhost:9002"},
+		{ID: "n0", Addr: "localhost:9000", ClientAddr: "localhost:8000"},
+		{ID: "n1", Addr: "localhost:9001", ClientAddr: "localhost:8001"},
+		{ID: "n2", Addr: "localhost:9002", ClientAddr: "localhost:8002"},
 	}}
 
 	t.Run("splits self from peers", func(t *testing.T) {
-		myAddr, peers, err := cfg.View("n0")
+		myAddr, _, peers, err := cfg.View("n0")
 		if err != nil {
 			t.Fatalf("View failed: %v", err)
 		}
@@ -70,7 +70,7 @@ func TestView(t *testing.T) {
 	})
 
 	t.Run("unknown id errors", func(t *testing.T) {
-		if _, _, err := cfg.View("nope"); err == nil {
+		if _, _, _, err := cfg.View("nope"); err == nil {
 			t.Fatal("expected error for unknown id, got nil")
 		}
 	})

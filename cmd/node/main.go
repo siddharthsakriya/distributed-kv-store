@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,7 +19,7 @@ import (
 
 func main() {
 	id := flag.String("id", "", "this node's id (must match the config)")
-	configPath := flag.String("config", "raft-cluster.yaml", "path to cluster config")
+	configPath := flag.String("config", "raft-cluster.yml", "path to cluster config")
 	flag.Parse()
 
 	if *id == "" {
@@ -29,7 +30,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("load config: %v", err)
 	}
-	myAddr, peers, err := cfg.View(*id)
+	myAddr, myClientAddr, peers, err := cfg.View(*id)
 	if err != nil {
 		log.Fatalf("config view: %v", err)
 	}
@@ -62,12 +63,9 @@ func main() {
 		}
 	}()
 
-	go func() {
-		for msg := range applyCh {
-			kv.Apply(msg.Command)
-			log.Printf("[%s] applied idx=%d", *id, msg.Index)
-		}
-	}()
+	kvServer := server.NewKVServer(node, kv, applyCh)
+	go kvServer.RunApplyLoop()
+	go http.ListenAndServe(myClientAddr, server.Handler(kvServer))
 
 	node.Start()
 	log.Printf("[%s] node started, peers=%v", *id, peerIDs)
