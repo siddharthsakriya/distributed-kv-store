@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"log"
 	"sync"
 	"time"
 
@@ -31,6 +32,7 @@ func NewKVServer(node *raft.Node, sm StateMachine, applyChan chan raft.ApplyMsg)
 func (s *KVServer) RunApplyLoop() {
 	for msg := range s.applyCh {
 		res := s.sm.Apply(msg.Command)
+		log.Printf("applied idx=%d cmd=%s", msg.Index, msg.Command)
 		s.mu.Lock()
 		ch, ok := s.waiters[msg.Index]
 		if ok {
