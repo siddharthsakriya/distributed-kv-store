@@ -25,8 +25,9 @@ Core consensus is implemented and tested under the race detector:
 - [x] **Apply loop** — committed entries delivered in order, exactly once, on an apply channel
 - [x] **Lifecycle** — `Start`/`Stop` with clean goroutine shutdown
 - [x] Persistence crash-recovery and Figure 8 safety tests (logic is in place, dedicated tests pending)
+- [x] A real network transport (only an in-memory `FakeTransport` exists, used for tests)
 - [ ] Additional failure-path tests (partition, kill-leader-mid-flight, log repair)
-- [ ] A real network transport (only an in-memory `FakeTransport` exists, used for tests)
+
 
 ### Design
 
