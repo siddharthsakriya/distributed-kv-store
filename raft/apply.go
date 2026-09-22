@@ -2,6 +2,7 @@ package raft
 
 type ApplyMsg struct {
 	Index   int
+	Term    int
 	Command []byte
 }
 
@@ -20,6 +21,7 @@ func (n *Node) runApplyLoop() {
 			entry := n.entryAt(i)
 			msgs = append(msgs, ApplyMsg{
 				Index:   entry.Index,
+				Term:    entry.Term,
 				Command: entry.Command,
 			})
 		}

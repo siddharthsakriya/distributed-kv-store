@@ -11,13 +11,24 @@ import (
 
 var ErrNotLeader = errors.New("not leader")
 var ErrTimeout = errors.New("apply timed out")
+var ErrLostLeadership = errors.New("lost leadership, entry overwritten")
+
+type applyResult struct {
+	value []byte
+	err   error
+}
+
+type waiter struct {
+	term int
+	ch   chan applyResult
+}
 
 type KVServer struct {
 	node    *raft.Node
 	sm      StateMachine
 	applyCh chan raft.ApplyMsg
 	mu      sync.Mutex
-	waiters map[int]chan []byte
+	waiters map[int]*waiter
 }
 
 func NewKVServer(node *raft.Node, sm StateMachine, applyChan chan raft.ApplyMsg) *KVServer {
@@ -25,18 +36,19 @@ func NewKVServer(node *raft.Node, sm StateMachine, applyChan chan raft.ApplyMsg)
 		node:    node,
 		sm:      sm,
 		applyCh: applyChan,
-		waiters: make(map[int]chan []byte),
+		waiters: make(map[int]*waiter),
 	}
 }
 
 func (s *KVServer) RunApplyLoop() {
 	for msg := range s.applyCh {
 		res := s.sm.Apply(msg.Command)
+		if msg.Term != res.Term
 		log.Printf("applied idx=%d cmd=%s", msg.Index, msg.Command)
 		s.mu.Lock()
-		ch, ok := s.waiters[msg.Index]
+		w, ok := s.waiters[msg.Index]
 		if ok {
-			ch <- res
+			w.ch <- res
 		}
 		delete(s.waiters, msg.Index)
 		s.mu.Unlock()
@@ -44,18 +56,18 @@ func (s *KVServer) RunApplyLoop() {
 }
 
 func (s *KVServer) Submit(cmd []byte) ([]byte, error) {
+	s.mu.Lock()
 	res := s.node.Submit(cmd)
 	if !res.IsLeader {
+		s.mu.Lock()
 		return nil, ErrNotLeader
 	}
-	ch := make(chan []byte, 1)
-	s.mu.Lock()
+	w := &waiter{term: res.Term, ch: make(chan applyResult, 1)}
 	s.waiters[res.Index] = ch
 	s.mu.Unlock()
-
 	select {
-	case result := <-ch:
-		return result, nil
+	case result := <-w.ch:
+		return result.value, result.err
 	case <-time.After(2 * time.Second):
 		s.mu.Lock()
 		delete(s.waiters, res.Index)
