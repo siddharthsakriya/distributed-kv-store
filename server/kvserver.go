@@ -43,12 +43,19 @@ func NewKVServer(node *raft.Node, sm StateMachine, applyChan chan raft.ApplyMsg)
 func (s *KVServer) RunApplyLoop() {
 	for msg := range s.applyCh {
 		res := s.sm.Apply(msg.Command)
-		if msg.Term != res.Term
 		log.Printf("applied idx=%d cmd=%s", msg.Index, msg.Command)
 		s.mu.Lock()
 		w, ok := s.waiters[msg.Index]
 		if ok {
-			w.ch <- res
+			if w.term != msg.Term {
+				w.ch <- applyResult{
+					err: ErrLostLeadership,
+				}
+			} else {
+				w.ch <- applyResult{
+					value: res,
+				}
+			}
 		}
 		delete(s.waiters, msg.Index)
 		s.mu.Unlock()
@@ -59,11 +66,11 @@ func (s *KVServer) Submit(cmd []byte) ([]byte, error) {
 	s.mu.Lock()
 	res := s.node.Submit(cmd)
 	if !res.IsLeader {
-		s.mu.Lock()
+		s.mu.Unlock()
 		return nil, ErrNotLeader
 	}
 	w := &waiter{term: res.Term, ch: make(chan applyResult, 1)}
-	s.waiters[res.Index] = ch
+	s.waiters[res.Index] = w
 	s.mu.Unlock()
 	select {
 	case result := <-w.ch:
