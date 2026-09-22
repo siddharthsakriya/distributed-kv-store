@@ -8,3 +8,9 @@ nodes:
   - id: n2
     addr: localhost:9002
     client_addr: localhost:8002
+  - id: n3
+    addr: localhost:9003
+    client_addr: localhost:8003
+  - id: n4
+    addr: localhost:9004
+    client_addr: localhost:8004

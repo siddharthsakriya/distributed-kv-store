@@ -69,6 +69,10 @@ func (n *Node) runElectionTimer() {
 
 func (n *Node) startElection() {
 	n.mu.Lock()
+	if n.stopped || n.role == Leader || time.Since(n.lastHeard) <= n.electionTimeout {
+		n.mu.Unlock()
+		return
+	}
 	n.currentTerm++
 	n.votedFor = n.id
 	n.role = Candidate
@@ -122,7 +126,7 @@ func (n *Node) startElection() {
 					log.Printf("[%s] became LEADER for term %d", n.id, n.currentTerm)
 					// initialise nextIndex and matchIndex maps
 					n.constructLeaderMaps()
-					go n.runReplication()
+					go n.runReplication(n.currentTerm)
 				}
 			}
 			n.mu.Unlock()

@@ -90,6 +90,7 @@ func NewNode(cfg Config) *Node {
 	}
 
 	n.applyCond = sync.NewCond(&n.mu)
+	n.resetElectionTimer()
 
 	return n
 }

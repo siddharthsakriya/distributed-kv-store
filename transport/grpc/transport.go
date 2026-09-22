@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	raftpb "github.com/siddharthsakriya/distributed-kv-store/proto/gen/raft/v1"
 	"github.com/siddharthsakriya/distributed-kv-store/raft"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -43,7 +45,18 @@ func (t *Transport) client(peerID string) (raftpb.RaftServiceClient, error) {
 	}
 
 	//dial and cache it
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithConnectParams(grpc.ConnectParams{
+			Backoff: backoff.Config{
+				BaseDelay:  50 * time.Millisecond,
+				Multiplier: 1.6,
+				Jitter:     0.2,
+				MaxDelay:   100 * time.Millisecond,
+			},
+			MinConnectTimeout: 500 * time.Millisecond,
+		}),
+	)
 	if err != nil {
 		return nil, err
 	}

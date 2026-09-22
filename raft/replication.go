@@ -67,14 +67,14 @@ func (n *Node) HandleAppendEntries(args *AppendEntriesArgs) *AppendEntriesReply 
 	}
 }
 
-func (n *Node) runReplication() {
+func (n *Node) runReplication(currentTerm int) {
 	for {
 		n.mu.Lock()
 		role := n.role
-		currentTerm := n.currentTerm
+		term := n.currentTerm
 		stopped := n.stopped
 		n.mu.Unlock()
-		if stopped || role != Leader {
+		if stopped || role != Leader || term != currentTerm {
 			return
 		}
 		for _, peerID := range n.peers {
@@ -126,7 +126,7 @@ func (n *Node) runReplication() {
 						n.advanceCommitIndex()
 					}
 				} else {
-					if n.nextIndex[peerID] > 1 {
+					if n.nextIndex[peerID] == prevLogIndex+1 && n.nextIndex[peerID] > n.matchIndex[peerID]+1 {
 						// try lower index in next iter
 						n.nextIndex[peerID]--
 					}
@@ -177,9 +177,9 @@ func (n *Node) entryAt(idx int) LogEntry {
 
 func (n *Node) entriesFrom(idx int) []LogEntry {
 	if idx <= 1 {
-		return n.log
+		return append([]LogEntry(nil), n.log...)
 	}
-	return n.log[idx-1:]
+	return append([]LogEntry(nil), n.log[idx-1:]...)
 }
 
 func (n *Node) advanceCommitIndex() {
