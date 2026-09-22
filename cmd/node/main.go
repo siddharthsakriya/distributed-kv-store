@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/siddharthsakriya/distributed-kv-store/cluster"
@@ -20,11 +21,17 @@ import (
 func main() {
 	id := flag.String("id", "", "this node's id (must match the config)")
 	configPath := flag.String("config", "raft-cluster.yml", "path to cluster config")
+	dataDir := flag.String("data-dir", "data", "directory for raft state files")
 	flag.Parse()
 
 	if *id == "" {
 		log.Fatal("-id is required")
 	}
+
+	if err := os.MkdirAll(*dataDir, 0755); err != nil {
+		log.Fatalf("create data dir: %v", err)
+	}
+	statePath := filepath.Join(*dataDir, *id+".state")
 
 	cfg, err := cluster.Load(*configPath)
 	if err != nil {
@@ -46,6 +53,7 @@ func main() {
 		ID:        *id,
 		Peers:     peerIDs,
 		Transport: transport,
+		Persister: raft.NewFilePersister(statePath),
 		ApplyCh:   applyCh,
 	})
 
