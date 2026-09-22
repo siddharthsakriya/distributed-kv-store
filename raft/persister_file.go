@@ -2,6 +2,8 @@ package raft
 
 import (
 	"encoding/json/v2"
+	"errors"
+	"fmt"
 	"os"
 	"sync"
 )
@@ -16,6 +18,8 @@ type persistedState struct {
 	VotedFor string
 	Log      []LogEntry
 }
+
+var _ Persister = (*FilePersister)(nil)
 
 func NewFilePersister(path string) *FilePersister {
 	return &FilePersister{
@@ -68,5 +72,19 @@ func (fp *FilePersister) Save(term int, votedFor string, log []LogEntry) error {
 }
 
 func (fp *FilePersister) Load() (term int, votedFor string, log []LogEntry) {
-
+	fp.mu.Lock()
+	defer fp.mu.Unlock()
+	data, err := os.ReadFile(fp.path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return 0, "", nil
+		}
+		panic(fmt.Sprintf("load %s: read: %v", fp.path, err))
+	}
+	var st persistedState
+	err = json.Unmarshal(data, &st)
+	if err != nil {
+		panic(fmt.Sprintf("load %s: corrupt state: %v", fp.path, err))
+	}
+	return st.Term, st.VotedFor, st.Log
 }
