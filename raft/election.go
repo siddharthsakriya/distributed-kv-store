@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"fmt"
 	"log"
 	"math/rand/v2"
 	"time"
@@ -171,7 +172,10 @@ func (n *Node) persist() {
 	if n.persister == nil {
 		return
 	}
-	n.persister.Save(n.currentTerm, n.votedFor, n.log)
+	err := n.persister.Save(n.currentTerm, n.votedFor, n.log)
+	if err != nil {
+		panic(fmt.Sprintf("[%s] persist failed at term %d: %v", n.id, n.currentTerm, err))
+	}
 }
 
 func (n *Node) resetElectionTimer() {
