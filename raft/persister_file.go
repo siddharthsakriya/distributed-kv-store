@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -68,7 +69,25 @@ func (fp *FilePersister) Save(term int, votedFor string, log []LogEntry) error {
 	}
 
 	// swap old file with new
-	return os.Rename(tmpPath, fp.path)
+	err = os.Rename(tmpPath, fp.path)
+	if err != nil {
+		return err
+	}
+
+	dir := filepath.Dir(fp.path)
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+
+	syncErr := d.Sync()
+
+	err = d.Close()
+	if err != nil {
+		return err
+	}
+
+	return syncErr
 }
 
 func (fp *FilePersister) Load() (term int, votedFor string, log []LogEntry) {
